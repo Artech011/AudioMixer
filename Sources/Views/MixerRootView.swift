@@ -60,9 +60,19 @@ struct MixerRootView: View {
                     let x = min(max(point.x, width / 2 + inset),
                                 panelWidth - width / 2 - inset)
 
+                    // Центр окошка на 14 точек выше верхней кромки слайдера:
+                    // окошко высотой около двадцати точек, и так между ним и
+                    // ручкой остаётся зазор, а не нахлёст.
                     HoverTipBubble(text: tip.text)
                         .frame(maxWidth: maxWidth)
-                        .position(x: x, y: point.y - 12)
+                        .position(x: x, y: point.y - 14)
+                        // Подсказка идёт за ручкой один к одному, без анимации.
+                        // Иначе её подхватывает пружина списка ниже
+                        // (.animation(value: viewModel.apps)): каждое движение
+                        // ползунка меняет громкость, то есть apps, и цифры
+                        // перетекали друг в друга, а окошко догоняло ручку
+                        // с опозданием и тянуло за собой хвост.
+                        .transaction { $0.animation = nil }
                 }
             }
             .allowsHitTesting(false)

@@ -183,38 +183,61 @@ struct HoverTipKey: PreferenceKey {
 struct HoverTipBubble: View {
     let text: String
 
-    static let fontSize: CGFloat = 10
-    private static let horizontalPadding: CGFloat = 5
+    @Environment(\.colorScheme) private var colorScheme
+
+    static let fontSize: CGFloat = 12
+    private static let fontWeight: NSFont.Weight = .semibold
+    private static let horizontalPadding: CGFloat = 7
 
     /// Ширина окошка, посчитанная по тексту.
     ///
     /// Нужна, чтобы прижать подсказку к краю панели по-настоящему: ограничить
     /// один только центр мало — у длинного названия половина окошка всё равно
-    /// уезжала за край и обрезалась.
+    /// уезжала за край и обрезалась. Шрифт здесь обязан совпадать с тем, которым
+    /// текст рисуется, иначе посчитанная ширина разойдётся с настоящей.
     static func width(of text: String) -> CGFloat {
-        let font = NSFont.systemFont(ofSize: fontSize, weight: .medium)
+        let font = NSFont.systemFont(ofSize: fontSize, weight: fontWeight)
         let text = (text as NSString).size(withAttributes: [.font: font]).width
         return text.rounded(.up) + horizontalPadding * 2
     }
 
     var body: some View {
         Text(text)
-            .font(.system(size: Self.fontSize, weight: .medium).monospacedDigit())
-            .foregroundStyle(.primary)
+            .font(.system(size: Self.fontSize, weight: .semibold).monospacedDigit())
+            .foregroundStyle(textColor)
             .lineLimit(2)
             .multilineTextAlignment(.center)
             .padding(.horizontal, Self.horizontalPadding)
-            .padding(.vertical, 2)
+            .padding(.vertical, 3)
             .background(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(.thickMaterial)
+                // Фон сплошной, а не материал. Материал поверх стеклянной
+                // панели — это стекло на стекле: фон просвечивает насквозь, и
+                // мелкие цифры в нём расплываются.
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(fillColor)
+                    // Рамка в целую точку: полуточечная линия на экране без
+                    // ретины превращается в размытую серую полосу.
                     .overlay(
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .strokeBorder(.primary.opacity(0.08), lineWidth: 0.5)
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .strokeBorder(borderColor, lineWidth: 1)
                     )
-                    .shadow(color: .black.opacity(0.22), radius: 3, y: 1)
+                    .shadow(color: .black.opacity(0.35), radius: 4, y: 1)
             )
             .fixedSize()
             .allowsHitTesting(false)
+    }
+
+    private var textColor: Color {
+        colorScheme == .dark ? .white : .black
+    }
+
+    /// На тёмной панели окошко чуть светлее её, на светлой — почти белое:
+    /// так оно отделяется от фона, а не сливается с ним.
+    private var fillColor: Color {
+        colorScheme == .dark ? Color(white: 0.2) : Color(white: 0.98)
+    }
+
+    private var borderColor: Color {
+        colorScheme == .dark ? .white.opacity(0.28) : .black.opacity(0.2)
     }
 }
